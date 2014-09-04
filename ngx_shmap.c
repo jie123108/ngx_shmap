@@ -1,8 +1,8 @@
-
-
 #include "ngx_shmap.h"
-#include "ngx_log_mod.h"
 #include <assert.h>
+#ifdef NGX_BIZLOG
+#include "ngx_log_mod.h"
+#endif
 
 static int ngx_shmap_set_helper(ngx_shm_zone_t* zone, ngx_str_t* key, ngx_str_t* value,
 			uint8_t value_type, uint32_t exptime, uint32_t user_flags, int flags);
@@ -304,8 +304,10 @@ int ngx_shmap_get_int32(ngx_shm_zone_t* zone, ngx_str_t* key, int32_t* i)
 	if(ret == 0){
 		if(value_type != VT_INT32){
 			ret = -1;
+			#ifdef NGX_BIZLOG
 			NLOG_ERROR("ngx_shmap_get_int32(key=%V) return invalid value_type=%d",
-						key, value_type);
+						key, value_type);			
+			#endif
 		}else{
 			int32_t* p = (int32_t*)data.data;
 			*i = *p;
@@ -322,8 +324,10 @@ int ngx_shmap_get_int64(ngx_shm_zone_t* zone, ngx_str_t* key, int64_t* i)
 	if(ret == 0){
 		if(value_type != VT_INT64){
 			ret = -1;
+			#ifdef NGX_BIZLOG
 			NLOG_ERROR("ngx_shmap_get_int64(key=%V) return invalid value_type=%d",
 						key, value_type);
+			#endif
 		}else{
 			int64_t* p = (int64_t*)data.data;
 			*i = *p;
@@ -340,8 +344,10 @@ int ngx_shmap_get_int64_and_clear(ngx_shm_zone_t* zone, ngx_str_t* key, int64_t*
 	if(ret == 0){
 		if(value_type != VT_INT64){
 			ret = -1;
+			#ifdef NGX_BIZLOG
 			NLOG_ERROR("ngx_shmap_get_int64(key=%V) return invalid value_type=%d",
 						key, value_type);
+			#endif
 		}else{
 			int64_t* p = (int64_t*)data.data;
 			*i = __sync_fetch_and_and(p, 0);
@@ -630,8 +636,10 @@ int ngx_shmap_inc_int(ngx_shm_zone_t* zone, ngx_str_t* key,int64_t i,uint32_t ex
 	rc = ngx_shmap_get(zone, key, &data, &value_type, NULL,NULL);
 	if(rc == 0){
 		if(value_type != VT_INT64){
+			#ifdef NGX_BIZLOG
 			NLOG_ERROR("key [%V] value_type [%d] invalid!",
 					key, value_type);
+			#endif
 			return -1;
 		}
 		int64_t* p = (int64_t*)data.data;
@@ -659,8 +667,10 @@ int ngx_shmap_inc_double(ngx_shm_zone_t* zone, ngx_str_t* key,double d,uint32_t 
 	rc = ngx_shmap_get(zone, key, &data, &value_type, NULL,NULL);
 	if(rc == 0){
 		if(value_type != VT_DOUBLE){
+			#ifdef NGX_BIZLOG
 			NLOG_ERROR("key [%V] value_type [%d] invalid!",
 					key, value_type);
+			#endif
 			return -1;
 		}
 		double* p = (double*)data.data;
@@ -714,8 +724,10 @@ static int ngx_shmap_set_helper(ngx_shm_zone_t* zone, ngx_str_t* key, ngx_str_t*
 
     rc = ngx_shmap_lookup(zone, hash, key->data, key->len, &sd);
 
-    NLOG_DEBUG("shdict lookup returned %d", (int) rc);
-
+	#ifdef NGX_BIZLOG
+	NLOG_DEBUG("shdict lookup returned %d", (int) rc);
+	#endif
+	
 	if (flags & NGX_SHARED_MAP_DELETE) {
 		if (rc == NGX_DECLINED || rc == NGX_DONE) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
@@ -764,8 +776,9 @@ static int ngx_shmap_set_helper(ngx_shm_zone_t* zone, ngx_str_t* key, ngx_str_t*
 
 replace:
         if (value->data && value->len == (size_t) sd->value_len) {
+			#ifdef NGX_BIZLOG
             NLOG_DEBUG("shmap set: found old entry and value size matched, reusing it");
-
+			#endif
             ngx_queue_remove(&sd->queue);
             ngx_queue_insert_head(&ctx->sh->queue, &sd->queue);
 
@@ -795,9 +808,10 @@ replace:
             return 0;
         }
 
+		#ifdef NGX_BIZLOG
         NLOG_DEBUG("shmap set: found old entry but value size "
                        "NOT matched, removing it first");
-
+		#endif
 remove:
         ngx_queue_remove(&sd->queue);
 
@@ -818,7 +832,9 @@ insert:
 
     if (value == NULL || value->data == NULL) {
         ngx_shmtx_unlock(&ctx->shpool->mutex);
+		#ifdef NGX_BIZLOG
 		NLOG_ERROR("shmap add failed! value is null!");
+		#endif
         return -1;
     }
 
@@ -836,13 +852,16 @@ insert:
         if (flags & NGX_SHARED_MAP_SAFE_STORE) {
             ngx_shmtx_unlock(&ctx->shpool->mutex);
 
+			#ifdef NGX_BIZLOG
 			NLOG_ERROR("shmap add failed! no memory!");
+			#endif
 			return -1;
         }
 
+		#ifdef NGX_BIZLOG
         NLOG_DEBUG("shmap set: overriding non-expired items "
-                       "due to memory shortage for entry \"%V\"", &name);
-
+	                       "due to memory shortage for entry \"%V\"", &name);
+		#endif
         for (i = 0; i < 30; i++) {
             if (ngx_shmap_expire(ctx, 0) == 0) {
                 break;
@@ -858,7 +877,9 @@ insert:
 
         ngx_shmtx_unlock(&ctx->shpool->mutex);
 
+		#ifdef NGX_BIZLOG
 		NLOG_ERROR("shmap add failed! no memory!");
+		#endif
 		return -1;
     }
 
