@@ -98,6 +98,8 @@ int ngx_shmap_replace(ngx_shm_zone_t* zone, ngx_str_t* key, ngx_str_t* value,
 //设置一个key,value.
 int ngx_shmap_set(ngx_shm_zone_t* zone, ngx_str_t* key, ngx_str_t* value,
 			uint8_t value_type, uint32_t exptime, uint32_t user_flags);
+int ngx_shmap_safe_set(ngx_shm_zone_t* zone, ngx_str_t* key, ngx_str_t* value,
+			uint8_t value_type, uint32_t exptime, uint32_t user_flags);
 
 //给key增加i,并返回增加后的值。
 int ngx_shmap_inc_int(ngx_shm_zone_t* zone, ngx_str_t* key,int64_t i,uint32_t exptime, int64_t* ret);
@@ -107,6 +109,7 @@ int ngx_shmap_inc_double(ngx_shm_zone_t* zone, ngx_str_t* key,double d,uint32_t 
 void ngx_str_set_int32(ngx_str_t* key, int32_t* ikey);
 void ngx_str_set_int64(ngx_str_t* key, int64_t* ikey);
 void ngx_str_set_double(ngx_str_t* key, double* value);
+uint32_t ngx_shmap_crc32(u_char *p, size_t len);
 
 #endif
 

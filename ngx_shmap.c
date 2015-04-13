@@ -29,7 +29,7 @@ void ngx_str_set_double(ngx_str_t* key, double* value)
 	key->data = (u_char*)value;
 }
 
-static ngx_inline uint32_t ngx_shmap_crc32(u_char *p, size_t len)
+ngx_inline uint32_t ngx_shmap_crc32(u_char *p, size_t len)
 {
 	if(len == sizeof(ngx_int_t)){
 		uint32_t* pi = (uint32_t*)p;
